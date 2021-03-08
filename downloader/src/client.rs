@@ -4,7 +4,7 @@ use reqwest::Client;
 
 lazy_static! {
     static ref SEAL_CODE_RE:Regex = Regex::new(r"&#(?P<code>[0-9]+);-seal\.svg").unwrap();
-    static ref SEAL_CHAR_RE:Regex = Regex::new(r"(?P<ch>[\u4E00-\u62FF\u6300-\u77FF\u7800-\u8CFF\u8D00-\u9FFF])-seal\.svg").unwrap();
+    static ref SEAL_CHAR_RE:Regex = Regex::new(r"(?P<ch>[\u4E00-\u62FF\u6300-\u77FF\u7800-\u8CFF\u8D00-\u9FFF\u3400-\u4DBF\u{20000}-\u{215FF}\u{21600}-\u{230FF}\u{23100}-\u{245FF}\u{24600}-\u{260FF}\u{26100}-\u{275FF}\u{27600}-\u{290FF}\u{29100}-\u{2A6DF}\u{2A700}-\u{2B73F}\u{2B740}–\u{2B81F}\u{2B820}–\u{2CEAF}\u{2CEB0}–\u{2EBEF}\u{30000}–\u{3134F}])-seal\.svg").unwrap();
 }
 
 pub struct APIClient {
