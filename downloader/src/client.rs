@@ -4,6 +4,7 @@ use reqwest::Client;
 
 lazy_static! {
     static ref SEAL_CODE_RE:Regex = Regex::new(r"&#(?P<code>[0-9]+);-seal\.svg").unwrap();
+    static ref SEAL_CHAR_RE:Regex = Regex::new(r"(?P<ch>[\u4E00-\u62FF\u6300-\u77FF\u7800-\u8CFF\u8D00-\u9FFF])-seal\.svg").unwrap();
 }
 
 pub struct APIClient {
@@ -48,13 +49,14 @@ impl APIClient {
 
     pub async fn get_character(&self, description_url:&str) -> reqwest::Result<Option<char>>{
         let res = self.client.get(description_url).send().await?.text().await?;
-        let captures = match SEAL_CODE_RE.captures(&res) {
-            Some(captures) => captures,
-            None => return Ok(None),
-        };
 
-        let char_code = captures["code"].parse::<u32>().unwrap();
-        let ch = char::from_u32(char_code);
+        let ch = match SEAL_CODE_RE.captures(&res) {
+            Some(captures) => char::from_u32(captures["code"].parse::<u32>().unwrap()),
+            None => match SEAL_CHAR_RE.captures(&res) {
+                Some(captures) => captures["ch"].chars().next(),
+                None => None,
+            },
+        };
 
         Ok(ch)
     }
