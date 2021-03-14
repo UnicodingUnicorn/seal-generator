@@ -27,7 +27,7 @@ pub enum ChargenError {
 }
 
 pub struct CharacterGenerator {
-    mappings: HashMap<char, (bool, String)>,
+    pub mappings: HashMap<char, (bool, String)>,
 }
 impl CharacterGenerator {
     pub fn new(savefile:&str, characters_dir:&str, ids_file:&str) -> Result<Self, ChargenError> {
