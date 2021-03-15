@@ -17,7 +17,7 @@ use std::sync::Arc;
 lazy_static! {
     static ref LINE_RE:Regex = Regex::new(r"(?m)^U\+[0-9A-F]{4}\t(?P<ch>[^\t])\t(?P<mappings>.+)$").unwrap();
     static ref MAP_RE:Regex = Regex::new(r"(?P<mapping>[^\t\[\]A-Z]+)\[(?P<type>[A-Z]+)\]").unwrap();
-    static ref SAVE_RE:Regex = Regex::new(r"(?m)(?P<ch>[^\t])\t(?P<available>true|false)\t(?P<mapping>[^\t]+)").unwrap();
+    static ref SAVE_RE:Regex = Regex::new(r"(?m)^(?P<ch>[^\s])\s+(?P<available>true|false)\s+(?P<mapping>[^\s]+)$").unwrap();
 }
 
 #[derive(Debug, Error)]
