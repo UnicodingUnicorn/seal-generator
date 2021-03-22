@@ -3,15 +3,16 @@ extern crate lazy_static;
 #[macro_use]
 extern crate thiserror;
 
+mod characters;
 mod expansions;
 mod utils;
+
+use characters::Characters;
 use expansions::Expansions;
 
 use regex::Regex;
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::fs::{ self, DirEntry };
-use std::path::Path;
 use std::sync::Arc;
 
 lazy_static! {
@@ -23,51 +24,18 @@ lazy_static! {
 #[derive(Debug, Error)]
 pub enum ChargenError {
     #[error("error occured reading fs: {0}")]
-    IO(#[from] std::io::Error)
+    IO(#[from] std::io::Error),
+    #[error("error reading svg: {0}")]
+    SVG(#[from] usvg::Error),
 }
 
 pub struct CharacterGenerator {
     pub mappings: HashMap<char, (bool, String)>,
+    characters: Characters,
 }
 impl CharacterGenerator {
-    pub fn new(savefile:&str, characters_dir:&str, ids_file:&str) -> Result<Self, ChargenError> {
-        Ok(match Self::from_save(savefile) {
-            Ok(chargen) => chargen,
-            Err(_) => {
-                let chargen = Self::from_files(characters_dir, ids_file)?;
-                chargen.save(savefile)?;
-                chargen      
-            },
-        })
-    }
-
-    pub fn from_save(savefile:&str) -> Result<Self, ChargenError> {
-        let raw_save = utils::read_file(savefile)?;
-        
-        let mut mappings:HashMap<char, (bool, String)> = HashMap::new();
-        for line in SAVE_RE.captures_iter(&raw_save) {
-            let ch = line["ch"].chars().next().unwrap();
-            let available = match &line["available"] {
-                "true" => true,
-                _ => false,
-            };
-            let mapping = line["mapping"].to_string();
-
-            mappings.insert(ch, (available, mapping));
-        }
-
-        Ok(Self {
-            mappings,
-        })
-    }
-
     pub fn from_files(characters_dir:&str, ids_file:&str) -> Result<Self, ChargenError> {
-        let available_characters = fs::read_dir(Path::new(characters_dir))?
-            .collect::<std::io::Result<Vec<DirEntry>>>()?
-            .iter()
-            .filter(|e| !e.path().is_dir())
-            .filter_map(|e| e.file_name().into_string().ok()?.chars().next())
-            .collect::<Vec<char>>();
+        let available_characters = Characters::from_dir(characters_dir)?;
 
         let raw_ids = utils::read_file(ids_file)?;
         let mut ids_mappings = LINE_RE.captures_iter(&raw_ids)
@@ -90,20 +58,21 @@ impl CharacterGenerator {
             mappings.insert(*ch, Self::assess_mappings(m, &available_characters));
         }
 
-        let unmapped_chars = available_characters.iter().filter(|ch| !mappings.contains_key(ch)).collect::<Vec<&char>>();
+        let unmapped_chars = available_characters.except(&mappings);
 
         for ch in unmapped_chars {
-            mappings.insert(*ch, (true, String::from(*ch)));
+            mappings.insert(ch, (true, String::from(ch)));
         }
 
         Ok(Self {
             mappings,
+            characters: available_characters,
         })
     }
 
-    fn assess_mappings(mappings:&[String], available_characters:&[char]) -> (bool, String) {
+    fn assess_mappings(mappings:&[String], available_characters:&Characters) -> (bool, String) {
         let mut has_available = mappings.iter()
-            .filter(|m| m.chars().all(|ch| available_characters.iter().any(|ach| *ach == ch)))
+            .filter(|m| m.chars().all(|ch| available_characters.has(ch)))
             .collect::<Vec<&String>>();
 
         has_available.sort_by(|a, b| a.chars().count().cmp(&b.chars().count()));
@@ -124,8 +93,8 @@ impl CharacterGenerator {
         (false, mapping.to_string())
     }
 
-    fn expand(ch:char, available_characters:&[char], raw_mappings:&[(char, Arc<String>)], mappings:&mut HashMap<char, Arc<Vec<String>>>) -> Arc<Vec<String>> {
-        if available_characters.iter().any(|ach| *ach == ch) {
+    fn expand(ch:char, available_characters:&Characters, raw_mappings:&[(char, Arc<String>)], mappings:&mut HashMap<char, Arc<Vec<String>>>) -> Arc<Vec<String>> {
+        if available_characters.has(ch) {
             return Arc::new(Expansions::from_character(ch));
         }
 
@@ -142,7 +111,7 @@ impl CharacterGenerator {
 
                 let mut res:Vec<String> = Expansions::new_blank();
                 for ch in mapping.chars() {
-                    if available_characters.iter().any(|ach| *ach == ch) {
+                    if available_characters.has(ch) {
                         res.push_char(ch);
                     } else if utils::is_ids_char(ch) {
                         res.push_char(ch);
