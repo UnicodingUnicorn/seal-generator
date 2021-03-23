@@ -1,9 +1,11 @@
 use crate::ChargenError;
+use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 use std::fs::{ self, DirEntry };
 use std::path::Path;
 use usvg::{ self, Options, Tree, XmlOptions };
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct Characters {
     characters: HashMap<char, String>,
 }

@@ -11,6 +11,7 @@ use characters::Characters;
 use expansions::Expansions;
 
 use regex::Regex;
+use serde::{ Deserialize, Serialize };
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -29,6 +30,7 @@ pub enum ChargenError {
     SVG(#[from] usvg::Error),
 }
 
+#[derive(Debug, Deserialize, Serialize)]
 pub struct CharacterGenerator {
     pub mappings: HashMap<char, (bool, String)>,
     characters: Characters,
