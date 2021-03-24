@@ -1,17 +1,19 @@
 use crate::ChargenError;
+use crate::svg_data::SVGData;
 use serde::{ Deserialize, Serialize };
 use std::collections::HashMap;
 use std::fs::{ self, DirEntry };
 use std::path::Path;
-use usvg::{ self, Options, Tree, XmlOptions };
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct Characters {
-    characters: HashMap<char, String>,
+    characters: HashMap<char, SVGData>,
 }
 impl Characters {
     pub fn from_dir(characters_dir:&str) -> Result<Self, ChargenError> {
-        let chars = fs::read_dir(Path::new(characters_dir))?
+        let characters_dir = Path::new(characters_dir);
+
+        let chars = fs::read_dir(characters_dir)?
             .collect::<std::io::Result<Vec<DirEntry>>>()?
             .iter()
             .filter(|e| !e.path().is_dir())
@@ -22,10 +24,10 @@ impl Characters {
                 Some((ch, file_name))
             })
             .map(|(ch, file_name)| {
-                let svg_data = Tree::from_file(&file_name, &Options::default())?.to_string(XmlOptions::default());
+                let svg_data = SVGData::from_file(characters_dir.join(Path::new(&file_name)))?;
                 Ok((ch, svg_data))
             })
-            .collect::<Result<Vec<(char, String)>, usvg::Error>>()?;
+            .collect::<Result<Vec<(char, SVGData)>, usvg::Error>>()?;
 
         let mut characters = HashMap::new();
         for (ch, svg) in chars {
@@ -35,6 +37,10 @@ impl Characters {
         Ok(Self {
             characters,
         })
+    }
+
+    pub fn get(&self, ch:char) -> Option<&SVGData> {
+        self.characters.get(&ch)
     }
 
     pub fn has(&self, ch:char) -> bool {

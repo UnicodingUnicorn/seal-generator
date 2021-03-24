@@ -5,10 +5,13 @@ extern crate thiserror;
 
 mod characters;
 mod expansions;
+mod idc;
+pub mod svg_data;
 mod utils;
 
 use characters::Characters;
 use expansions::Expansions;
+use idc::{ IDC, IDCer };
 
 use regex::Regex;
 use serde::{ Deserialize, Serialize };
@@ -28,6 +31,16 @@ pub enum ChargenError {
     IO(#[from] std::io::Error),
     #[error("error reading svg: {0}")]
     SVG(#[from] usvg::Error),
+    #[error("svg data for the character {0} is not unavailable")]
+    Unsupported(char),
+    #[error("not enough characters supplied for the IDC sequence")]
+    IDCNotEnough,
+    #[error("ideographic description character {0} is not supported")]
+    IDCUnsupported(char),
+    #[error("the renderer was supplied with negative width and height")]
+    InvalidWidthAndHeight,
+    #[error("mapping does not reduce to one character")]
+    IDCIncompleteReduction,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -74,7 +87,7 @@ impl CharacterGenerator {
 
     fn assess_mappings(mappings:&[String], available_characters:&Characters) -> (bool, String) {
         let mut has_available = mappings.iter()
-            .filter(|m| m.chars().all(|ch| available_characters.has(ch)))
+            .filter(|m| m.chars().all(|ch| available_characters.has(ch) || utils::is_ids_char(ch)))
             .collect::<Vec<&String>>();
 
         has_available.sort_by(|a, b| a.chars().count().cmp(&b.chars().count()));
@@ -157,5 +170,30 @@ impl CharacterGenerator {
         utils::write_file(filename, &contents)?;
 
         Ok(())
+    }
+
+    pub fn svg(&self, ch:char) -> Option<String> {
+        let idc = IDC::new(300.0, 300.0, &self.characters).unwrap();
+        let (available, mapping) = self.mappings.get(&ch)?;
+        if !available {
+            return None;
+        }
+
+        let characters = IDCer::new(&idc, &mapping)
+            .map(|d| d.map(|d| d.svg().to_string()))
+            .collect::<Result<Vec<String>, ChargenError>>()
+            .map(|d| match d.len() > 0 {
+                true => Some(d[0].clone()),
+                false=> None,
+            })
+            .ok()
+            .flatten()?;
+
+            /*
+        println!("{:#?}", characters);
+
+        Some(self.characters.get(ch)?.svg())
+        */
+        Some(characters)
     }
 }
