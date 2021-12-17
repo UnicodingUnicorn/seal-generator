@@ -60,4 +60,12 @@ impl SVGData {
     pub fn svg(&self) -> &str {
         &self.svg_string
     }
+
+    pub fn scale_y(&self, b:&Self) -> (f64, f64) {
+        if self.bounding_box().h < b.bounding_box().h {
+            (b.bounding_box().h / self.bounding_box().h, 1.0)
+        } else {
+            (1.0, self.bounding_box().h / b.bounding_box().h)
+        }
+    }
 }

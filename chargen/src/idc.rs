@@ -184,9 +184,13 @@ impl IdeographicDescriptionCharacter for LeftToRight {
     fn consume(&self, chars:&[Rc<SVGData>]) -> Result<Vec<Transform>, ChargenError> {
         let b = reverse_index(0, chars)?;
         let a = reverse_index(1, chars)?;
+        let (a_scale, b_scale) = a.scale_y(&b);
 
-        let a_transform = Transform::new_translate(-a.bounding_box().x, -a.bounding_box().y);
-        let b_transform = Transform::new_translate(-b.bounding_box().x + a.bounding_box().w, -b.bounding_box().y);
+        let mut a_transform = Transform::new_translate(-a.bounding_box().x * a_scale, -a.bounding_box().y * a_scale);
+        let mut b_transform = Transform::new_translate(-b.bounding_box().x * b_scale + a.bounding_box().w * a_scale, -b.bounding_box().y * b_scale);
+
+        a_transform.scale(a_scale, a_scale);
+        b_transform.scale(b_scale, b_scale);
 
         Ok(vec![b_transform, a_transform])
     }
