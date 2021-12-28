@@ -52,7 +52,7 @@ pub fn parse_raw_map(filename:&str) -> Result<(Option<char>, RawKanjiMap), Kanji
                             false => None,
                         };
 
-                        add_to_entry(parent, elems_stack[elems_stack.len() - 1], &entag(e), &mut tmp);
+                        add_to_entry(parent, elems_stack[elems_stack.len() - 1], &filter_kvg(&entag(e))?, &mut tmp);
                     }
                 },
             },
@@ -63,7 +63,7 @@ pub fn parse_raw_map(filename:&str) -> Result<(Option<char>, RawKanjiMap), Kanji
                         false => None,
                     };
 
-                    add_to_entry(parent, elems_stack[elems_stack.len() - 1], &enslashtag(e), &mut tmp);
+                    add_to_entry(parent, elems_stack[elems_stack.len() - 1], &filter_kvg(&enslashtag(e))?, &mut tmp);
                 }
             },
             Event::Text(ref e) => {
@@ -141,4 +141,14 @@ fn enslashtag(value:&[u8]) -> Vec<u8> {
     res.push(10); // '\n'
 
     res
+}
+
+fn filter_kvg(value:&[u8]) -> Result<Vec<u8>, std::string::FromUtf8Error> {
+    Ok(String::from_utf8(value.to_vec())?
+        .split(" ")
+        .filter(|s| !s.starts_with("kvg"))
+        .collect::<Vec<&str>>()
+        .join(" ")
+        .as_bytes()
+        .to_vec())
 }

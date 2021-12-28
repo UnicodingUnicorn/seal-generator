@@ -6,14 +6,14 @@ mod kanji;
 use kanji::{ parse };
 mod xml;
 
-use std::time::Instant;
+// use std::time::Instant;
 
 fn main() {
     // let kanji_dir = "../kanjivg/kanji";
-    let start = Instant::now();
+    // let start = Instant::now();
     let cache = build_cache("../characters").unwrap();
-    println!("{}ms", start.elapsed().as_millis());
-    if let Err(e) = parse("../kanjivg/kanji/07503.svg", &cache) {
-        println!("{}", e);
-    }
+    // println!("{}ms", start.elapsed().as_millis());
+
+    let res = parse("../kanjivg/kanji/07503.svg", &cache).unwrap();
+    println!("{}", res);
 }
