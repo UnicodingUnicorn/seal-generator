@@ -28,10 +28,10 @@ pub fn build_cache(characters_dir:&str) -> Result<HashMap<char, CacheEntry>, Kan
                 None => return Err(KanjiError::Name),
             };
 
-            let options = usvg::Options::default();
-            let tree = Tree::from_str(&contents, &options.to_ref())?;
-            let bbox = tree.root().calculate_bbox().ok_or(KanjiError::BBox)?;
             let svg = get_paths(&contents)?;
+            let options = usvg::Options::default();
+            let tree = Tree::from_str(&format!("<svg xmlns=\"http://www.w3.org/2000/svg\">{}</svg>", svg), &options.to_ref())?;
+            let bbox = tree.root().calculate_bbox().ok_or(KanjiError::BBox)?;
 
             let entry = CacheEntry {
                 svg,
