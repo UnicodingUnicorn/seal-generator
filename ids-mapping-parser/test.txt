@@ -1,8 +1,0 @@
-# Copyright (c) 2014-2017 CJKVI Database
-# Based on CHISE IDS Database
-U+2E8C	⺌	⺌
-U+2EB8	⺸	⿱艹干
-U+4E0E	与	⿹②一[GTKV]	⿻②一[J]
-U+6D77	海	⿰氵每[GTKV]	⿰氵毎[J]
-U+6BCF	每	⿱𠂉母
-U+6BCD	母	母

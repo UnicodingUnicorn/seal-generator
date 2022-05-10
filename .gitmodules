@@ -1,6 +1,0 @@
-[submodule "cjkvi-ids"]
-	path = cjkvi-ids
-	url = https://github.com/cjkvi/cjkvi-ids.git
-[submodule "kanjivg"]
-	path = kanjivg
-	url = https://github.com/KanjiVG/kanjivg.git
