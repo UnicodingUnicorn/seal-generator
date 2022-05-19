@@ -28,6 +28,27 @@ impl CharacterPosition {
     }
 }
 
+pub struct PositionedCharacter {
+    d: String,
+    translate_x: i16,
+    translate_y: i16,
+    scale: f64,
+}
+impl PositionedCharacter {
+    pub fn new(d:&str, translate_x:i16, translate_y:i16, scale:f64) -> Self {
+        Self {
+            d: d.to_string(),
+            translate_x,
+            translate_y,
+            scale,
+        }
+    }
+
+    pub fn svg(&self) -> String {
+        format!("<path fill=\"black\" transform=\"scale({}) translate({} {}) rotate(180)\" d=\"{}\" />", self.scale, self.translate_x, self.translate_y, self.d)
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Character {
     path: String,
@@ -45,7 +66,7 @@ impl Character {
         })
     }
 
-    pub fn svg(&self, position:&CharacterPosition) -> String {
+    pub fn positioned(&self, position:&CharacterPosition) -> PositionedCharacter {
         let width:f64 = (self.bbox.x_max - self.bbox.x_min).abs().into();
         let height:f64 = (self.bbox.y_max - self.bbox.y_min).abs().into();
 
@@ -55,14 +76,14 @@ impl Character {
         };
 
         let correction_x = match width > height {
-            true => 0.0,
-            false => (height - width) / 2.0,
-        } as i16;
+            true => 0,
+            false => ((height - width) / 2.0) as i16,
+        };
 
         let correction_y = match width > height {
-            true => (width - height) / 2.0,
-            false => 0.0,
-        } as i16;
+            true => ((width - height) / 2.0) as i16,
+            false => 0,
+        };
 
         let scaled_x = ((position.x as f64) / (position.width as f64) * width).floor() as i16;
         let scaled_y = ((position.y as f64) / (position.height as f64) * height).floor() as i16;
@@ -70,7 +91,6 @@ impl Character {
         let translate_x = 0 - std::cmp::min(self.bbox.x_min, self.bbox.x_max) + scaled_x + correction_x;
         let translate_y = 0 - std::cmp::min(self.bbox.y_min, self.bbox.y_min) + scaled_y + correction_y;
 
-        let transform = format!("transform=\"scale({}) translate({} {}) rotate(180)\"", scaling_factor, translate_x, translate_y);
-        format!("<path fill=\"black\" {} d=\"{}\" />", transform, self.path)
+        PositionedCharacter::new(&self.path, translate_x, translate_y, scaling_factor)
     }
 }

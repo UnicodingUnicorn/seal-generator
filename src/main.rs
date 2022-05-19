@@ -15,7 +15,7 @@ fn main() {
         .zip(squares)
         .map(|(ch, pos)| {
             let character = Character::new(ch, &font_face)?;
-            Some(character.svg(&pos))
+            Some(character.positioned(&pos).svg())
         })
         .collect::<Option<Vec<String>>>()
         .unwrap()
