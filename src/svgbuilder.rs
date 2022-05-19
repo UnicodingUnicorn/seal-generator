@@ -10,11 +10,11 @@ impl SVGBuilder {
 
 impl OutlineBuilder for SVGBuilder {
     fn move_to(&mut self, x:f32, y:f32) {
-        write!(&mut self.0, "M {} {}", x, y).unwrap();
+        write!(&mut self.0, "M {} {} ", x, y).unwrap();
     }
 
     fn line_to(&mut self, x:f32, y:f32) {
-        write!(&mut self.0, "L {} {}", x, y).unwrap();
+        write!(&mut self.0, "L {} {} ", x, y).unwrap();
     }
 
     fn quad_to(&mut self, x1:f32, y1:f32, x:f32, y:f32) {
