@@ -1,3 +1,5 @@
-# omerta
+# seal-generator
 
-Thanks to the [Ancient Chinese Characters Project](https://commons.wikimedia.org/wiki/Commons:Ancient_Chinese_characters_project) for their library of seal script SVGs.
+Automatic Chinese Seal generation.
+
+Thanks to some [weird Taiwanese website](https://www.cns11643.gov.tw/) for the seal script font file I used.
