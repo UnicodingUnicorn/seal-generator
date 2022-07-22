@@ -10,7 +10,7 @@ fn main() {
     let font_face = Face::from_slice(&font_data, 0).unwrap();
 
     let test = "林海之印";
-    let squares = CharacterPosition::squares(400);
+    let squares = CharacterPosition::squares(15);
     let output = test.chars()
         .zip(squares)
         .map(|(ch, pos)| {
