@@ -21,5 +21,5 @@ fn main() {
         .unwrap()
         .join("\n");
 
-    println!("<svg>\n{}\n</svg>", output);
+    println!("<svg>\n<g transform=\"scale(-1, 1)\">{}\n</g></svg>", output);
 }
