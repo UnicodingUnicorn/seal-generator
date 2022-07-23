@@ -30,11 +30,10 @@ fn run(s:&str) -> Result<String, GeneratorError> {
     let squares = CharacterPosition::squares(15);
     let output = s.chars()
         .zip(squares)
-        .map(|(ch, pos)| {
-            let character = Character::new(ch, &font_face)
-                .ok_or(GeneratorError::NoCharacter(ch))?;
-            Ok(character.positioned(&pos).svg())
-        })
+        .map(|(ch, pos)| Ok(Character::new(ch, &font_face)
+            .ok_or(GeneratorError::NoCharacter(ch))?
+            .positioned(&pos)
+            .svg()))
         .collect::<Result<Vec<String>, GeneratorError>>()?
         .join("\n");
 
