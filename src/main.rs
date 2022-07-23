@@ -1,25 +1,42 @@
 use std::fs;
+use thiserror::Error;
 use ttf_parser::{ Face };
 
 mod character;
 use character::{ Character, CharacterPosition };
 mod svgbuilder;
 
-fn main() {
-    let font_data = fs::read("./ebas927.ttf").unwrap();
-    let font_face = Face::from_slice(&font_data, 0).unwrap();
+#[derive(Debug, Error)]
+enum GeneratorError {
+    #[error("character {0} cannot be found")]
+    NoCharacter(char),
+    #[error("the font file could not be found")]
+    NoFont,
+    #[error("{0}")]
+    FontError(#[from] ttf_parser::FaceParsingError),
+}
 
+fn main() {
     let test = "林海之印";
+
+    run(test).unwrap();
+}
+
+fn run(s:&str) -> Result<String, GeneratorError> {
+    let font_data = fs::read("./ebas927.ttf")
+        .map_err(|_| GeneratorError::NoFont)?;
+    let font_face = Face::from_slice(&font_data, 0)?;
+
     let squares = CharacterPosition::squares(15);
-    let output = test.chars()
+    let output = s.chars()
         .zip(squares)
         .map(|(ch, pos)| {
-            let character = Character::new(ch, &font_face)?;
-            Some(character.positioned(&pos).svg())
+            let character = Character::new(ch, &font_face)
+                .ok_or(GeneratorError::NoCharacter(ch))?;
+            Ok(character.positioned(&pos).svg())
         })
-        .collect::<Option<Vec<String>>>()
-        .unwrap()
+        .collect::<Result<Vec<String>, GeneratorError>>()?
         .join("\n");
 
-    println!("<svg>\n<g transform=\"scale(-1, 1)\">{}\n</g></svg>", output);
+    Ok(format!("<svg>\n<g transform=\"scale(-1, 1)\">{}\n</g></svg>", output))
 }
