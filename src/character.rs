@@ -17,14 +17,13 @@ impl CharacterPosition {
         }
     }
 
-    pub fn squares(side:i16) -> Vec<Self> {
-        let mut res = Vec::new();
-        res.push(Self::square(side / 2, side / 2, 0));
-        res.push(Self::square(side / 2, side / 2, side / 2));
-        res.push(Self::square(side / 2, 0, 0));
-        res.push(Self::square(side / 2, 0, side / 2));
-
-        res
+    pub fn squares(side:i16) -> [Self; 4] {
+        [
+            Self::square(side / 2, 0, 0),
+            Self::square(side / 2, 0, side / 2),
+            Self::square(side / 2, side / 2, 0),
+            Self::square(side / 2, side / 2, side / 2)
+        ]
     }
 }
 
@@ -45,7 +44,7 @@ impl PositionedCharacter {
     }
 
     pub fn svg(&self) -> String {
-        format!("<path fill=\"black\" transform=\"scale({}) translate({} {}) rotate(180)\" d=\"{}\" />", self.scale, self.translate_x, self.translate_y, self.d)
+        format!("<path fill=\"black\" transform=\"translate({} {}) scale(-{} -{})\" d=\"{}\" />", self.translate_x, self.translate_y, self.scale, self.scale, self.d)
     }
 }
 
@@ -66,6 +65,7 @@ impl Character {
         })
     }
 
+    // TODO: Lifetimes for PositionedCharacter inheriting parent Character
     pub fn positioned(&self, position:&CharacterPosition) -> PositionedCharacter {
         let width:f64 = (self.bbox.x_max - self.bbox.x_min).abs().into();
         let height:f64 = (self.bbox.y_max - self.bbox.y_min).abs().into();
@@ -75,22 +75,6 @@ impl Character {
             false => (position.height as f64) / height,
         };
 
-        let correction_x = match width > height {
-            true => 0,
-            false => ((height - width) / 2.0) as i16,
-        };
-
-        let correction_y = match width > height {
-            true => ((width - height) / 2.0) as i16,
-            false => 0,
-        };
-
-        let scaled_x = ((position.x as f64) / (position.width as f64) * width).floor() as i16;
-        let scaled_y = ((position.y as f64) / (position.height as f64) * height).floor() as i16;
-
-        let translate_x = 0 - std::cmp::min(self.bbox.x_min, self.bbox.x_max) + scaled_x + correction_x;
-        let translate_y = 0 - std::cmp::min(self.bbox.y_min, self.bbox.y_min) + scaled_y + correction_y;
-
-        PositionedCharacter::new(&self.path, translate_x, translate_y, scaling_factor)
+        PositionedCharacter::new(&self.path, position.x, position.y, scaling_factor)
     }
 }

@@ -12,7 +12,7 @@ mod svgbuilder;
 struct Config {
     #[clap(value_parser)]
     text: String,
-    #[clap(short, long, default_value_t=15)]
+    #[clap(short, long, default_value_t=16)]
     size: u16,
     #[clap(short, long)]
     output: Option<String>,
@@ -33,7 +33,7 @@ enum GeneratorError {
 fn main() {
     let args = Config::parse();
     if let Err(e) = run(&args) {
-        println!("{}", e);
+        eprintln!("{}", e);
         std::process::exit(1);
     }
 }
@@ -52,7 +52,7 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
         .collect::<Result<Vec<String>, GeneratorError>>()?
         .join("\n");
 
-    let output = format!("<svg>\n<g transform=\"scale(-1, 1)\">{}\n</g></svg>", output);
+    let output = format!("<svg>\n{}\n</svg>", output);
     if let Some(output_file) = &args.output {
         fs::write(output_file, output.as_bytes())
             .map_err(|e| GeneratorError::WriteError(e))?;
