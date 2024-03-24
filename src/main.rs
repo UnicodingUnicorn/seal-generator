@@ -1,10 +1,12 @@
+#![feature(iter_intersperse)]
+
 use clap::Parser;
 use std::fs;
 use thiserror::Error;
 use ttf_parser::{ Face };
 
 mod character;
-use character::{ Character, CharacterPosition };
+use character::{ PositionedCharacter, CharacterPosition };
 mod svgbuilder;
 
 #[derive(Debug, Parser)]
@@ -16,6 +18,8 @@ struct Config {
     size: u16,
     #[clap(short, long)]
     output: Option<String>,
+    #[clap(short, long, default_value_t=8)]
+    resolution: u64,
 }
 
 #[derive(Debug, Error)]
@@ -43,12 +47,14 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
         .map_err(|_| GeneratorError::NoFont)?;
     let font_face = Face::from_slice(&font_data, 0)?;
 
+    // TODO: Pad characters if input string is less than 4
+
     let output = args.text.chars()
         .zip(CharacterPosition::squares(args.size as i16))
-        .map(|(ch, pos)| Ok(Character::new(ch, &font_face)
+        .map(|(ch, pos)| Ok(PositionedCharacter::new(ch, &font_face, &pos)
             .ok_or(GeneratorError::NoCharacter(ch))?
-            .positioned(&pos)
-            .svg()))
+            .to_points(args.resolution)))
+        .map(|points:Result<Vec<Vec<Vec<f64>>>, GeneratorError>| Ok(points_to_svg(&points?)))
         .collect::<Result<Vec<String>, GeneratorError>>()?
         .join("\n");
 
@@ -61,4 +67,11 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
     }
 
     Ok(())
+}
+
+fn points_to_svg(points:&[Vec<Vec<f64>>]) -> String {
+    points.iter()
+        .map(|line| format!("<path d=\"M{}\" />", line.iter().map(|p| format!("{},{}", p[0], p[1])).intersperse(String::from(" ")).collect::<String>()))
+        .intersperse(String::from("\n"))
+        .collect::<String>()
 }

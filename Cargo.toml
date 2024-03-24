@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 clap = { version = "3.2.14", features = [ "derive" ] }
+svg-path-parser = "0.1.1"
 thiserror = "1.0.31"
 ttf-parser = "0.15.0"

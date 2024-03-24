@@ -160,6 +160,7 @@ name = "seal-generator"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "svg-path-parser",
  "thiserror",
  "ttf-parser",
 ]
@@ -169,6 +170,12 @@ name = "strsim"
 version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
+
+[[package]]
+name = "svg-path-parser"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0b9c14d81f74375771fd908df2e0cefba1c96406d49ff829e2f5fda703e38e02"
 
 [[package]]
 name = "syn"
