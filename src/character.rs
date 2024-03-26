@@ -1,4 +1,6 @@
+use crate::GeneratorError;
 use crate::svgbuilder::SVGBuilder;
+use crate::triangles::{ PointsGroup, Triangles };
 use ttf_parser::Face;
 
 #[derive(Debug, Copy, Clone)]
@@ -61,11 +63,51 @@ impl PositionedCharacter {
     //     format!("<path fill=\"black\" transform=\"translate({} {}) scale(-{} -{})\" d=\"{}\" />", self.translate_x, self.translate_y, self.scale, self.scale, self.d)
     // }
 
-    pub fn to_points(&self, resolution:u64) -> Vec<Vec<Vec<f64>>> {
-        svg_path_parser::parse_with_resolution(&self.d, resolution)
-            .map(|(_, points)| points.iter()
-                .map(|(x, y)| vec![*x * -self.scale + self.translate_x, *y * -self.scale + self.translate_y])
-                .collect::<Vec<Vec<f64>>>())
-            .collect::<Vec<Vec<Vec<f64>>>>()
+    // Separate distinct entities
+    pub fn to_triangles(&self, resolution:u64) -> Result<Vec<Triangles>, GeneratorError> {
+        let mut pgs = svg_path_parser::parse_with_resolution(&self.d, resolution)
+            .map(|(_, points)| {
+                let points = points.iter()
+                    .map(|(x, y)| vec![*x * -self.scale + self.translate_x, *y * -self.scale + self.translate_y])
+                    .collect::<Vec<Vec<f64>>>();
+                PointsGroup::new(points)
+            })
+            .collect::<Vec<PointsGroup>>();
+        pgs.sort_by(|a, b| a.area().partial_cmp(&b.area()).unwrap());
+
+        let mut groups:Vec<(PointsGroup, Vec<PointsGroup>)> = Vec::new();
+        while let Some(pg) = pgs.pop() {
+            if let Some((_, children)) = groups.iter_mut().find(|(g, _)| g.contains(&pg)) {
+                children.push(pg);
+            } else {
+                groups.push((pg, Vec::new()));
+            }
+        }
+
+        let objects = groups.drain(0..)
+            .map(|(g, mut children)| vec![g]
+                .drain(0..)
+                .chain(children.drain(0..))
+                .map(|g| g.into_points())
+                .collect::<Vec<Vec<Vec<f64>>>>())
+            .collect::<Vec<Vec<Vec<Vec<f64>>>>>();
+
+        objects.iter().map(|object| Triangles::from_points(object)).collect::<Result<Vec<Triangles>, earcutr::Error>>().map_err(|e| GeneratorError::TriangulationError(e))
     }
+
+    // pub fn to_triangles(&self, resolution:u64) -> Result<Vec<[(f64, f64); 3]>, GeneratorError> {
+    //     let points = svg_path_parser::parse_with_resolution(&self.d, resolution)
+    //         .map(|(_, points)| points.iter()
+    //             .map(|(x, y)| vec![*x * -self.scale + self.translate_x, *y * -self.scale + self.translate_y])
+    //             .collect::<Vec<Vec<f64>>>())
+    //         .collect::<Vec<Vec<Vec<f64>>>>();
+
+    //     let (vertices, holes, dimensions) = earcutr::flatten(&points);
+    //     let triangles = earcutr::earcut(&vertices, &holes, dimensions)?
+    //         .array_chunks()
+    //         .map(|tp:&[usize; 3]| tp.map(|i| (vertices[i * 2], vertices[i * 2 + 1])))
+    //         .collect::<Vec<[(f64, f64); 3]>>();
+
+    //     Ok(triangles)
+    // }
 }

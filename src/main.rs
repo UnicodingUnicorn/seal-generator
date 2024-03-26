@@ -1,3 +1,4 @@
+#![feature(array_chunks)]
 #![feature(iter_intersperse)]
 
 use clap::Parser;
@@ -8,6 +9,8 @@ use ttf_parser::{ Face };
 mod character;
 use character::{ PositionedCharacter, CharacterPosition };
 mod svgbuilder;
+mod triangles;
+use triangles::Triangles;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about=None)]
@@ -23,7 +26,7 @@ struct Config {
 }
 
 #[derive(Debug, Error)]
-enum GeneratorError {
+pub enum GeneratorError {
     #[error("character {0} cannot be found")]
     NoCharacter(char),
     #[error("the font file could not be found")]
@@ -32,6 +35,8 @@ enum GeneratorError {
     FontError(#[from] ttf_parser::FaceParsingError),
     #[error("could not write output: {0}")]
     WriteError(std::io::Error),
+    #[error("{0}")]
+    TriangulationError(#[from] earcutr::Error),
 }
 
 fn main() {
@@ -53,8 +58,11 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
         .zip(CharacterPosition::squares(args.size as i16))
         .map(|(ch, pos)| Ok(PositionedCharacter::new(ch, &font_face, &pos)
             .ok_or(GeneratorError::NoCharacter(ch))?
-            .to_points(args.resolution)))
-        .map(|points:Result<Vec<Vec<Vec<f64>>>, GeneratorError>| Ok(points_to_svg(&points?)))
+            .to_triangles(args.resolution)?))
+        .map(|triangles:Result<Vec<Triangles>, GeneratorError>| Ok(triangles?.iter()
+            .map(|t| t.svg(false))
+            .intersperse(String::from("\n"))
+            .collect::<String>()))
         .collect::<Result<Vec<String>, GeneratorError>>()?
         .join("\n");
 
@@ -67,11 +75,4 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
     }
 
     Ok(())
-}
-
-fn points_to_svg(points:&[Vec<Vec<f64>>]) -> String {
-    points.iter()
-        .map(|line| format!("<path d=\"M{}\" />", line.iter().map(|p| format!("{},{}", p[0], p[1])).intersperse(String::from(" ")).collect::<String>()))
-        .intersperse(String::from("\n"))
-        .collect::<String>()
 }
