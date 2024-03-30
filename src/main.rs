@@ -8,9 +8,10 @@ use ttf_parser::{ Face };
 
 mod character;
 use character::{ PositionedCharacter, CharacterPosition };
+mod stl;
+use stl::Triangle;
 mod svgbuilder;
 mod triangles;
-use triangles::Triangles;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about=None)]
@@ -19,10 +20,12 @@ struct Config {
     text: String,
     #[clap(short, long, default_value_t=16)]
     size: u16,
-    #[clap(short, long)]
-    output: Option<String>,
+    #[clap(short, long, default_value="output.stl")]
+    output: String,
     #[clap(short, long, default_value_t=8)]
     resolution: u64,
+    #[clap(long, default_value_t=2.0)]
+    character_height: f32,
 }
 
 #[derive(Debug, Error)]
@@ -53,26 +56,23 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
     let font_face = Face::from_slice(&font_data, 0)?;
 
     // TODO: Pad characters if input string is less than 4
+    // TODO: Handle single character seals
 
-    let output = args.text.chars()
+    let triangles = args.text.chars()
         .zip(CharacterPosition::squares(args.size as i16))
         .map(|(ch, pos)| Ok(PositionedCharacter::new(ch, &font_face, &pos)
             .ok_or(GeneratorError::NoCharacter(ch))?
-            .to_triangles(args.resolution)?))
-        .map(|triangles:Result<Vec<Triangles>, GeneratorError>| Ok(triangles?.iter()
-            .map(|t| t.svg(false))
-            .intersperse(String::from("\n"))
-            .collect::<String>()))
-        .collect::<Result<Vec<String>, GeneratorError>>()?
-        .join("\n");
+            .to_triangles(args.resolution)?
+            .iter()
+            .map(|t| t.extrude(args.character_height, 0.0))
+            .flatten()
+            .collect::<Vec<Triangle>>()))
+        .collect::<Result<Vec<Vec<Triangle>>, GeneratorError>>()?
+        .into_iter().flatten().collect::<Vec<Triangle>>();
 
-    let output = format!("<svg>\n{}\n</svg>", output);
-    if let Some(output_file) = &args.output {
-        fs::write(output_file, output.as_bytes())
-            .map_err(|e| GeneratorError::WriteError(e))?;
-    } else {
-        println!("{}", output);
-    }
+    let output = stl::generate_stl(&triangles);
+    fs::write(&args.output, &output)
+        .map_err(|e| GeneratorError::WriteError(e))?;
 
     Ok(())
 }
