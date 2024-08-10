@@ -3,15 +3,17 @@ use crate::svgbuilder::SVGBuilder;
 use crate::triangles::{ Line, Triangles };
 use ttf_parser::Face;
 
+// TODO: Character padding
+
 #[derive(Debug, Copy, Clone)]
 pub struct CharacterPosition {
-    width: i16,
-    height: i16,
-    x: i16,
-    y: i16,
+    pub width: f32,
+    pub height: f32,
+    pub x: f32,
+    pub y: f32,
 }
 impl CharacterPosition {
-    pub fn square(side:i16, x:i16, y:i16) -> Self {
+    pub fn square(side:f32, x:f32, y:f32) -> Self {
         Self {
             width: side,
             height: side,
@@ -20,12 +22,12 @@ impl CharacterPosition {
         }
     }
 
-    pub fn squares(side:i16) -> [Self; 4] {
+    pub fn squares(side:f32) -> [Self; 4] {
         [
-            Self::square(side / 2, 0, 0),
-            Self::square(side / 2, 0, side / 2),
-            Self::square(side / 2, side / 2, 0),
-            Self::square(side / 2, side / 2, side / 2)
+            Self::square(side / 2.0, -side / 2.0, -side / 2.0),
+            Self::square(side / 2.0, -side / 2.0, 0.0),
+            Self::square(side / 2.0, 0.0, -side / 2.0),
+            Self::square(side / 2.0, 0.0, 0.0),
         ]
     }
 }
@@ -47,14 +49,14 @@ impl PositionedCharacter {
         let height:f32 = (bbox.y_max - bbox.y_min).abs().into();
 
         let scale = match width > height {
-            true => (position.width as f32) / width,
-            false => (position.height as f32) / height,
+            true => position.width / width,
+            false => position.height / height,
         };
 
         Some(Self {
             d: builder.into(),
-            translate_x: position.x.into(),
-            translate_y: position.y.into(),
+            translate_x: position.x - (bbox.x_min as f32) * scale + (position.width - width * scale) / 2.0,
+            translate_y: position.y - (bbox.y_min as f32) * scale + (position.height - height * scale) / 2.0, 
             scale,
         })
     }
@@ -64,7 +66,7 @@ impl PositionedCharacter {
         let mut lines = svg_path_parser::parse_with_resolution(&self.d, resolution)
             .map(|(_, points)| {
                 let points = points.iter()
-                    .map(|(x, y)| ((*x as f32) * -self.scale + self.translate_x, (*y as f32) * -self.scale + self.translate_y))
+                    .map(|(x, y)| ((*x as f32) * self.scale + self.translate_x, (*y as f32) * self.scale + self.translate_y))
                     .collect::<Vec<(f32, f32)>>();
                 Line::new(points)
             })

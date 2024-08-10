@@ -12,18 +12,23 @@ mod stl;
 use stl::Triangle;
 mod svgbuilder;
 mod triangles;
+use triangles::Triangles;
 
 #[derive(Debug, Parser)]
 #[clap(author, version, about, long_about=None)]
 struct Config {
     #[clap(value_parser)]
     text: String,
-    #[clap(short, long, default_value_t=16)]
-    size: u16,
+    #[clap(short, long, default_value_t=16.0)]
+    size: f32,
     #[clap(short, long, default_value="output.stl")]
     output: String,
-    #[clap(short, long, default_value_t=8)]
+    #[clap(long, default_value_t=8)]
     resolution: u64,
+    #[clap(long, default_value_t=1.0)]
+    spacing: f32,
+    #[clap(short, long, default_value_t=25.0)]
+    height: f32,
     #[clap(long, default_value_t=2.0)]
     character_height: f32,
 }
@@ -58,17 +63,25 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
     // TODO: Pad characters if input string is less than 4
     // TODO: Handle single character seals
 
-    let triangles = args.text.chars()
-        .zip(CharacterPosition::squares(args.size as i16))
+    let mut triangles = args.text.chars()
+        .zip(CharacterPosition::squares(args.size))
         .map(|(ch, pos)| Ok(PositionedCharacter::new(ch, &font_face, &pos)
             .ok_or(GeneratorError::NoCharacter(ch))?
             .to_triangles(args.resolution)?
             .iter()
-            .map(|t| t.extrude(args.character_height, 0.0))
+            .map(|t| t.extrude(args.character_height, args.height))
             .flatten()
             .collect::<Vec<Triangle>>()))
         .collect::<Result<Vec<Vec<Triangle>>, GeneratorError>>()?
         .into_iter().flatten().collect::<Vec<Triangle>>();
+
+    // Add stamp body
+    let mut t2 = Triangles::square(args.size + args.spacing * 3.0 * 2.0)?
+        .extrude(args.height, 0.0);
+
+    // TODO: Add border
+
+    triangles.append(&mut t2);
 
     let output = stl::generate_stl(&triangles);
     fs::write(&args.output, &output)
