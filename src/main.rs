@@ -6,6 +6,8 @@ use std::fs;
 use thiserror::Error;
 use ttf_parser::{ Face };
 
+mod border;
+use border::Border;
 mod character;
 use character::{ PositionedCharacter, CharacterPosition };
 mod stl;
@@ -27,6 +29,8 @@ struct Config {
     resolution: u64,
     #[clap(long, default_value_t=1.0)]
     spacing: f32,
+    #[clap(long, default_value_t=1.0)]
+    border_thickness: f32,
     #[clap(short, long, default_value_t=25.0)]
     height: f32,
     #[clap(long, default_value_t=2.0)]
@@ -63,6 +67,7 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
     // TODO: Pad characters if input string is less than 4
     // TODO: Handle single character seals
 
+    // TODO: Fix character orientations
     let mut triangles = args.text.chars()
         .zip(CharacterPosition::squares(args.size))
         .map(|(ch, pos)| Ok(PositionedCharacter::new(ch, &font_face, &pos)
@@ -75,13 +80,13 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
         .collect::<Result<Vec<Vec<Triangle>>, GeneratorError>>()?
         .into_iter().flatten().collect::<Vec<Triangle>>();
 
+    let outer_size = args.size + args.spacing * 2.0 + args.border_thickness * 2.0;
     // Add stamp body
-    let mut t2 = Triangles::square(args.size + args.spacing * 3.0 * 2.0)?
-        .extrude(args.height, 0.0);
+    // TODO: Fix broken face
+    triangles.append(&mut Triangles::square(outer_size)?.extrude(args.height, 0.0));
 
-    // TODO: Add border
-
-    triangles.append(&mut t2);
+    // Add border
+    triangles.append(&mut Border::new(outer_size, args.border_thickness).to_triangles(args.resolution)?.extrude(args.character_height, args.height));
 
     let output = stl::generate_stl(&triangles);
     fs::write(&args.output, &output)
