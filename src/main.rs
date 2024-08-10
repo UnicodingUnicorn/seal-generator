@@ -66,8 +66,6 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
 
     // TODO: Pad characters if input string is less than 4
     // TODO: Handle single character seals
-
-    // TODO: Fix character orientations
     let mut triangles = args.text.chars()
         .zip(CharacterPosition::squares(args.size))
         .map(|(ch, pos)| Ok(PositionedCharacter::new(ch, &font_face, &pos)

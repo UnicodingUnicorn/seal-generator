@@ -24,10 +24,10 @@ impl CharacterPosition {
 
     pub fn squares(side:f32) -> [Self; 4] {
         [
-            Self::square(side / 2.0, -side / 2.0, -side / 2.0),
-            Self::square(side / 2.0, -side / 2.0, 0.0),
             Self::square(side / 2.0, 0.0, -side / 2.0),
             Self::square(side / 2.0, 0.0, 0.0),
+            Self::square(side / 2.0, -side / 2.0, -side / 2.0),
+            Self::square(side / 2.0, -side / 2.0, 0.0),
         ]
     }
 }
@@ -35,6 +35,8 @@ impl CharacterPosition {
 #[derive(Debug, Clone)]
 pub struct PositionedCharacter {
     d: String,
+    centre_x: f32,
+    centre_y: f32,
     translate_x: f32,
     translate_y: f32,
     scale: f32,
@@ -55,8 +57,10 @@ impl PositionedCharacter {
 
         Some(Self {
             d: builder.into(),
-            translate_x: position.x - (bbox.x_min as f32) * scale + (position.width - width * scale) / 2.0,
-            translate_y: position.y - (bbox.y_min as f32) * scale + (position.height - height * scale) / 2.0, 
+            centre_x: -(bbox.x_min as f32) - width / 2.0,
+            centre_y: -(bbox.y_min as f32) - height / 2.0,
+            translate_x: position.x + position.width / 2.0,
+            translate_y: position.y + position.height / 2.0,
             scale,
         })
     }
@@ -66,7 +70,7 @@ impl PositionedCharacter {
         let mut lines = svg_path_parser::parse_with_resolution(&self.d, resolution)
             .map(|(_, points)| {
                 let points = points.iter()
-                    .map(|(x, y)| ((*x as f32) * self.scale + self.translate_x, (*y as f32) * self.scale + self.translate_y))
+                    .map(|(x, y)| ((*x as f32 + self.centre_x) * self.scale + self.translate_x, (*y as f32 + self.centre_y) * -self.scale + self.translate_y))
                     .collect::<Vec<(f32, f32)>>();
                 Line::new(points)
             })
