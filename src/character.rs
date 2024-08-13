@@ -4,6 +4,7 @@ use crate::triangles::{ Line, Triangles };
 use ttf_parser::Face;
 
 // TODO: Character padding
+// TODO: Scale characters to fit square
 
 #[derive(Debug, Copy, Clone)]
 pub struct CharacterPosition {
@@ -13,6 +14,15 @@ pub struct CharacterPosition {
     pub y: f32,
 }
 impl CharacterPosition {
+    pub fn centered(side:f32) -> Self {
+        Self {
+            width: side,
+            height: side,
+            x: -side / 2.0,
+            y: -side / 2.0,
+        }
+    }
+
     pub fn square(side:f32, x:f32, y:f32) -> Self {
         Self {
             width: side,
@@ -22,8 +32,8 @@ impl CharacterPosition {
         }
     }
 
-    pub fn squares(side:f32) -> [Self; 4] {
-        [
+    pub fn squares(side:f32) -> Vec<Self> {
+        vec![
             Self::square(side / 2.0, 0.0, -side / 2.0),
             Self::square(side / 2.0, 0.0, 0.0),
             Self::square(side / 2.0, -side / 2.0, -side / 2.0),

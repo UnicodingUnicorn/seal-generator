@@ -2,7 +2,10 @@
 #![feature(iter_intersperse)]
 
 use clap::Parser;
+use std::vec::IntoIter;
 use std::fs;
+use std::iter::Zip;
+use std::str::Chars;
 use thiserror::Error;
 use ttf_parser::{ Face };
 
@@ -52,22 +55,19 @@ pub enum GeneratorError {
 }
 
 fn main() {
-    let args = Config::parse();
-    if let Err(e) = run(&args) {
+    let mut args = Config::parse();
+    if let Err(e) = run(&mut args) {
         eprintln!("{}", e);
         std::process::exit(1);
     }
 }
 
-fn run(args:&Config) -> Result<(), GeneratorError> {
+fn run(args:&mut Config) -> Result<(), GeneratorError> {
     let font_data = fs::read("./ebas927.ttf")
         .map_err(|_| GeneratorError::NoFont)?;
     let font_face = Face::from_slice(&font_data, 0)?;
 
-    // TODO: Pad characters if input string is less than 4
-    // TODO: Handle single character seals
-    let mut triangles = args.text.chars()
-        .zip(CharacterPosition::squares(args.size))
+    let mut triangles = positioned_text(&mut args.text, args.size)
         .map(|(ch, pos)| Ok(PositionedCharacter::new(ch, &font_face, &pos)
             .ok_or(GeneratorError::NoCharacter(ch))?
             .to_triangles(args.resolution)?
@@ -91,4 +91,18 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
         .map_err(|e| GeneratorError::WriteError(e))?;
 
     Ok(())
+}
+
+fn positioned_text(text:&mut String, size:f32) -> Zip<Chars<'_>, IntoIter<CharacterPosition>> {
+    let len = text.chars().count();
+    if len == 1 {
+        return text.chars().zip(vec![CharacterPosition::centered(size)]);
+    } else if len == 2 {
+        text.push_str("之印");
+    } else if len == 3 {
+        text.push_str("印");
+    }
+
+    text.chars()
+        .zip(CharacterPosition::squares(size))
 }
