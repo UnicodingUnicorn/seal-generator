@@ -79,8 +79,8 @@ fn run(args:&Config) -> Result<(), GeneratorError> {
         .into_iter().flatten().collect::<Vec<Triangle>>();
 
     let outer_size = args.size + args.spacing * 2.0 + args.border_thickness * 2.0;
+    
     // Add stamp body
-    // TODO: Fix broken face
     triangles.append(&mut Triangles::square(outer_size)?.extrude(args.height, 0.0));
 
     // Add border

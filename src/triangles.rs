@@ -84,7 +84,7 @@ impl Triangles {
     // Centred on 0.0, 0.0
     pub fn square(side:f32) -> Result<Self, earcutr::Error> {
         let (p1, p2) = (-side / 2.0, side / 2.0);
-        let line = Line::new(vec![(p1, p1), (p2, p1), (p2, p2), (p1, p2)]);
+        let line = Line::new(vec![(p1, p1), (p2, p1), (p2, p2), (p1, p2), (p1, p1)]);
         Self::from_lines(&vec![line])
     }
 
